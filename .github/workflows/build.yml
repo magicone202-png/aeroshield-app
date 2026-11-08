@@ -1,7 +1,10 @@
 name: Build APK
 on:
   push:
+    branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,3 +25,18 @@ jobs:
         with:
           name: AeroShield-GO-apk
           path: AeroShield-GO.apk
+      # Готовый APK — на странице релиза (удобно скачать прямо на телефон)
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest AeroShield-GO.apk --title "АэроЩит-ГО (последняя сборка)" --notes "Сборка ${{ github.sha }}. Скачайте AeroShield-GO.apk на Android и установите."
+      # Копия APK в ветке apk
+      - name: Push APK to apk branch
+        run: |
+          mkdir out && cp AeroShield-GO.apk out/ && cd out
+          git init -q && git checkout -q -b apk
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add AeroShield-GO.apk && git commit -qm "APK ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apk
