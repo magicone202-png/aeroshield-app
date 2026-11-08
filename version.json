@@ -1,6 +1,6 @@
 {
   "apk": 2,
-  "ui": 3,
+  "ui": 4,
   "apkUrl": "https://github.com/magicone202-png/aeroshield-app/releases/tag/latest",
   "note": "Номер ui поднимается при каждом изменении экранов (app/src/main/assets/index.html, meta ui-version). Номер apk — при изменении Java-кода (versionCode в app/build.gradle)."
 }
