@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="ui-version" content="2">
+<!-- AEROSHIELD_UI: этот файл приложение скачивает с GitHub как обновление экранов -->
 <title>АэроЩит-ГО</title>
 <style>
 :root{--bg:#11181A;--card:#182124;--line:#283438;--ink:#E7EEEC;--mut:#8D9C99;--sig:#FF7A33;--ok:#43C487;--warn:#F2B53B;--bad:#FF5468;--duty:#7CB8CB;--alarm:#8E0C20}
@@ -50,16 +52,48 @@ h2{font-size:15px;margin:0 0 10px}
 input{width:100%;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:11px 12px;font-size:16px;margin-top:6px;font-family:inherit}
 label{display:block;margin-top:10px;font-size:13px;color:var(--mut)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;max-width:90%;display:none;z-index:60}
+/* заставка */
+.splash{position:fixed;inset:0;z-index:100;background:#0d1314;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s}
+.splash.hide{opacity:0;pointer-events:none}
+.splash .logo{width:150px;height:150px;display:grid;place-items:center}
+.splash .logo img,.splash .logo svg{max-width:150px;max-height:150px}
+.splash .org{text-align:center;color:var(--mut);font-size:13px;line-height:1.35;max-width:260px}
+.splash .bar{width:220px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:14px}
+.splash .bar i{display:block;height:100%;width:0;background:var(--sig);border-radius:3px;animation:load 2.4s ease-in-out forwards}
+.splash .pct{font-size:12px;color:var(--mut)}
+@keyframes load{0%{width:0}60%{width:72%}100%{width:100%}}
+/* обучение */
+.intro{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column;padding:24px 20px}
+.intro .slide{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:520px;margin:0 auto;width:100%}
+.intro h1{font-size:26px;margin:0;line-height:1.15}
+.intro p{margin:0;font-size:16px;color:#C9D3D1}
+.intro .ico{font-size:52px}
+.intro .dots{display:flex;gap:6px;justify-content:center;margin:12px 0}
+.intro .dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.intro .dots i.on{background:var(--sig);width:22px;border-radius:4px}
+.intro ul{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px;color:#C9D3D1}
+.badge{display:inline-block;background:rgba(255,122,51,.15);color:var(--sig);border-radius:8px;padding:3px 8px;font-size:12px;font-weight:700;letter-spacing:.05em}
+.upd{background:#1E4A5A;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:14px}
+.upd button{margin-left:auto;border:0;border-radius:8px;padding:8px 10px;font-weight:600;background:#fff;color:#1E4A5A}
+.wx{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center}
+.wx .t{font-size:44px;font-weight:700;line-height:1}
+.arrow{display:inline-block;transition:transform .3s}
 @keyframes pulse{50%{transform:scale(1.1)}}.pulse{animation:pulse 1s infinite;display:inline-block}
 </style></head>
 <body>
 <div class="top"><div class="brand">
 <svg viewBox="0 0 48 48"><path d="M24 3 42 10v13c0 11-7.6 19.4-18 22C13.6 42.4 6 34 6 23V10z" fill="#FF7A33"/><path d="M14 27c4-6 8-6 10-2s6 4 10-2" fill="none" stroke="#1A0C04" stroke-width="3" stroke-linecap="round"/><path d="M14 20c4-6 8-6 10-2s6 4 10-2" fill="none" stroke="#1A0C04" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg>
-<b>АэроЩит-ГО</b><button class="gear" data-a="cfg">Настройки</button></div>
+<b>АэроЩит-ГО</b><button class="gear" data-a="help">?</button> <button class="gear" data-a="cfg">Настройки</button></div>
 <div class="tabs" id="tabs"></div></div>
 <div class="wrap" id="app"></div>
 <div id="over"></div>
 <div class="toast" id="toast"></div>
+<div id="intro"></div>
+<div class="splash" id="splash">
+  <div class="logo" id="logo"><!--LOGO--><svg viewBox="0 0 120 120" aria-label="Шатурский энергетический техникум"><circle cx="60" cy="60" r="56" fill="none" stroke="#FF7A33" stroke-width="4"/><circle cx="60" cy="60" r="46" fill="#182124"/><path d="M66 22 40 66h18l-6 32 28-46H62z" fill="#FF7A33"/></svg><!--/LOGO--></div>
+  <div class="org">ГБПОУ МО «Шатурский энергетический техникум»</div>
+  <div style="font-size:22px;font-weight:700">АэроЩит<span style="color:var(--sig)">-ГО</span></div>
+  <div class="bar"><i></i></div><div class="pct" id="spl">Загрузка…</div>
+</div>
 <script>
 /* ===== Настройки и сеть ===== */
 var NATIVE=!!window.Android;
@@ -158,6 +192,7 @@ function resHtml(inPhone){
   var link=NATIVE&&N.watching?N.linkOk:(R&&Date.now()-R._ok<6000);
   h+='<section class="card" style="text-align:center;padding:22px 14px"><div style="font-size:42px">'+(j&&j.on?'🔴':link?'🟢':'⚪')+'</div><h2 style="font-size:20px;margin:6px 0">'+(j&&j.on?KINDS[j.kind][0]:link?'Тревог нет':'Нет связи с пультом')+'</h2><div class="mut">'+(j&&j.on&&j.ack==1?'Вы отметились в укрытии. Ждите сигнала отбоя.':link?'Связь с пультом станции есть.':'Подключите телефон к Wi‑Fi станции (точка «iPhone (Валерия)»).')+'</div></section>';
   if(!inPhone){
+    h+=wxHtml();
     var w=N.watching;
     h+='<section class="card"><h2>Фоновая охрана</h2><div class="mut" style="font-size:14px">'+(w?'Включена. Тревога зазвучит, даже если телефон заблокирован или приложение свёрнуто.':'Выключена. Сигнал прозвучит, только пока приложение открыто.')+'</div>'+
        (NATIVE?'<div class="row" style="margin-top:12px">'+(w?'<button class="btn gh" data-a="unwatch">Выключить охрану</button>':'<button class="btn ok" data-a="watch">Включить охрану</button>')+'</div><div class="row" style="margin-top:8px"><button class="btn gh" data-a="battery">Не усыплять приложение</button></div>':'<p class="note">Фоновая охрана работает только в установленном приложении.</p>')+'</section>';
@@ -195,7 +230,7 @@ function draw(){
     h='<div class="mut" style="font-size:13px">Слева — пульт работника станции, справа — телефон жителя. Объявите тревогу и ответьте за жителя.</div><div class="demo"><div style="display:flex;flex-direction:column;gap:12px"><div class="lbl">Пульт станции</div>'+stationHtml(true)+'</div>'+
       '<div><div class="lbl" style="margin-bottom:8px">Телефон жителя</div><div class="phone">'+resHtml(true)+(j&&j.on&&j.ack!=1?overHtml(j):'')+'</div></div></div>';
   }
-  $('app').innerHTML=h;
+  $('app').innerHTML=updHtml()+h;
   // красный экран на весь телефон — во вкладке «Житель»
   var j2=alarmNow();
   $('over').innerHTML=(!cfgOpen&&TAB=='res'&&j2&&j2.on&&j2.ack!=1)?overHtml(j2):'';
@@ -224,6 +259,12 @@ document.addEventListener('click',function(e){
   }
   var a=d.a;
   if(a=='cfg'){cfgOpen=!cfgOpen;draw();return}
+  if(a=='help'){slideN=0;drawIntro();return}
+  if(a=='intronext'){slideN++;drawIntro();return}
+  if(a=='introprev'){slideN--;drawIntro();return}
+  if(a=='introskip'){slideN=-1;ls('intro','2');drawIntro();return}
+  if(a=='reloadui'){if(NATIVE)Android.reloadUi();else location.reload();return}
+  if(a=='getapk'){if(NATIVE)Android.openUrl(UPD.apk);else window.open(UPD.apk);return}
   if(a=='cancel'){pick=-1;draw();return}
   if(a=='dismiss'){alerts=[];draw();return}
   if(a=='watch'){if(!KR){toast('Нет связи с прибором 1');return}Android.startWatch(CFG.base,KR);toast('Охрана включена');return}
@@ -243,7 +284,64 @@ document.addEventListener('submit',function(e){
   CFG.base=String(f.get('base')||'').trim().replace(/\/+$/,'');CFG.pinS=String(f.get('pinS')||'').trim();CFG.pinR=String(f.get('pinR')||'').trim();
   ls('base',CFG.base);ls('pinS',CFG.pinS);ls('pinR',CFG.pinR);KS=KR='';ls('kS','');ls('kR','');S=R=null;prevS=null;cfgOpen=false;toast('Сохранено');draw();
 });
-window.onBack=function(){if(cfgOpen){cfgOpen=false;draw();return true}if(pick>=0){pick=-1;draw();return true}return false};
+window.onBack=function(){if(slideN>0){slideN--;drawIntro();return true}if(slideN==0){slideN=-1;ls('intro','2');drawIntro();return true}if(cfgOpen){cfgOpen=false;draw();return true}if(pick>=0){pick=-1;draw();return true}return false};
+
+
+/* ===== Погода (Open-Meteo, без ключа) ===== */
+// Шатура и Шатурская ГРЭС
+var WX_LAT=55.578, WX_LON=39.545, GRES=[55.57936,39.56051], TOWN=[55.5777,39.5445];
+var WX=null; try{WX=JSON.parse(ls('wx')||'null')}catch(e){}
+var WMO={0:'Ясно',1:'Преимущественно ясно',2:'Переменная облачность',3:'Пасмурно',45:'Туман',48:'Изморозь, туман',51:'Слабая морось',53:'Морось',55:'Сильная морось',56:'Ледяная морось',57:'Ледяная морось',61:'Небольшой дождь',63:'Дождь',65:'Сильный дождь',66:'Ледяной дождь',67:'Ледяной дождь',71:'Небольшой снег',73:'Снег',75:'Сильный снег',77:'Снежная крупа',80:'Ливень',81:'Ливень',82:'Сильный ливень',85:'Снегопад',86:'Сильный снегопад',95:'Гроза',96:'Гроза с градом',99:'Гроза с градом'};
+var WICO=function(c){return c==0||c==1?'☀️':c==2?'⛅':c==3?'☁️':c<50?'🌫️':c<70||(c>=80&&c<=82)?'🌧️':c<90?'🌨️':'⛈️'};
+function getUrl(url){return new Promise(function(res){var done=function(c,t){var j=null;try{j=JSON.parse(t)}catch(e){}res({code:c,json:j})};
+  if(NATIVE){var id='w'+(++cbn);CB[id]=done;Android.http(id,'GET',url,'')}else fetch(url).then(function(r){return r.text().then(function(t){done(r.status,t)})}).catch(function(){done(0,'')})})}
+function loadWeather(){
+  if(WX&&Date.now()-WX._at<10*60000)return;
+  getUrl('https://api.open-meteo.com/v1/forecast?latitude='+WX_LAT+'&longitude='+WX_LON+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&wind_speed_unit=ms&timezone=Europe%2FMoscow').then(function(r){
+    if(r.code==200&&r.json&&r.json.current){WX=r.json.current;WX._at=Date.now();ls('wx',JSON.stringify(WX));draw()}
+  });
+}
+function bearing(a,b){var f1=a[0]*Math.PI/180,f2=b[0]*Math.PI/180,dl=(b[1]-a[1])*Math.PI/180;var y=Math.sin(dl)*Math.cos(f2),x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);return (Math.atan2(y,x)*180/Math.PI+360)%360}
+function dirName(d){return ['северный','северо-восточный','восточный','юго-восточный','южный','юго-западный','западный','северо-западный'][Math.round(d/45)%8]}
+function wxHtml(){
+  if(!WX)return '<section class="card"><h2>Погода в Шатуре</h2><div class="mut">Загружаю… Для погоды нужен интернет (точка доступа iPhone его раздаёт).</div></section>';
+  var w=WX,to=(w.wind_direction_10m+180)%360,toTown=bearing(GRES,TOWN),diff=Math.abs(((to-toTown)+540)%360-180);
+  var risk=diff<45&&w.wind_speed_10m>=1;
+  var age=Math.round((Date.now()-w._at)/60000);
+  return '<section class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Погода в Шатуре</h2><span class="mut" style="font-size:12px">'+(age<1?'только что':age+' мин назад')+'</span></div>'+
+    '<div class="wx" style="margin-top:10px"><span style="font-size:42px">'+WICO(w.weather_code)+'</span><div><span class="t num">'+(w.temperature_2m>0?'+':'')+Math.round(w.temperature_2m)+'°</span><div class="mut">'+(WMO[w.weather_code]||'')+', ощущается '+Math.round(w.apparent_temperature)+'°</div></div></div>'+
+    '<dl class="kv" style="margin-top:12px"><dt>Ветер</dt><dd><span class="arrow" style="transform:rotate('+to+'deg)">↑</span> '+w.wind_speed_10m.toFixed(1).replace('.',',')+' м/с, '+dirName(w.wind_direction_10m)+'</dd>'+
+    '<dt>Влажность</dt><dd>'+Math.round(w.relative_humidity_2m)+'%</dd><dt>Давление</dt><dd>'+Math.round(w.surface_pressure*0.750062)+' мм рт. ст.</dd><dt>Осадки</dt><dd>'+(w.precipitation>0?w.precipitation+' мм':'нет')+'</dd></dl>'+
+    '<p class="note" style="'+(risk?'color:var(--warn)':'')+'">'+(risk?'Ветер дует от ГРЭС в сторону жилых кварталов. Выбросы станции может нести к домам — следите за показаниями прибора и реже проветривайте.':'Ветер сейчас не несёт выбросы ГРЭС в сторону жилых кварталов.')+'</p></section>';
+}
+
+/* ===== Обновления ===== */
+var UPD=null;
+window.onUiUpdate=function(v){UPD={ui:v};draw()};
+window.onApkUpdate=function(url){UPD={apk:url};draw()};
+function updHtml(){
+  if(!UPD)return '';
+  if(UPD.ui)return '<div class="upd">✨ Загружена новая версия экранов<button data-a="reloadui">Обновить</button></div>';
+  return '<div class="upd">⬇️ Вышла новая версия приложения<button data-a="getapk">Скачать</button></div>';
+}
+
+/* ===== Обучение ===== */
+var SLIDES=[
+ ['🛡️','АэроЩит‑ГО','<span class="badge">«ЛЕСТНИЦА НАУК»</span><p style="margin-top:12px">Это приложение создано для демонстрации моего устройства «АэроЩит‑ГО» на конкурсе научно‑исследовательских работ «Лестница наук».</p><p>Устройство следит за воздухом рядом с Шатурской ГРЭС и оповещает жителей об опасности.</p>'],
+ ['📡','Как всё устроено','<ul><li><b>Прибор 1</b> стоит у станции. Это пульт работника: датчик угарного газа и кнопки тревоги.</li><li><b>Прибор 2</b> стоит в квартире жителя и связан с его телефоном по Bluetooth.</li><li><b>Телефоны</b> работника и жителя подключены к одной сети Wi‑Fi с прибором 1.</li></ul>'],
+ ['🏠','Вкладка «Житель»','<ul><li>Вверху — есть ли тревога и связь с пультом.</li><li><b>Включить охрану</b> — телефон зазвонит при тревоге, даже если он заблокирован.</li><li><b>Мой прибор</b> — подключение к прибору 2 и его показания.</li><li><b>Погода</b> — ветер подскажет, несёт ли выбросы ГРЭС к домам.</li></ul>'],
+ ['🏭','Вкладка «Диспетчер»','<ul><li>Угарный газ на приборе 1. Выше 50 ppm — сигнал.</li><li>Кнопки тревоги: <b>БПЛА</b>, <b>выброс</b>, <b>учебная</b>.</li><li>Видно, ответил ли житель: «в укрытии» или «прочитал».</li><li>«Дать отбой» завершает тревогу.</li></ul>'],
+ ['🖥️','Вкладка «Демо»','<p>Пульт станции и телефон жителя на одном экране — удобно показывать жюри.</p><p>Объявите тревогу слева и ответьте за жителя справа.</p>'],
+ ['✅','Перед началом','<ul><li>Подключите телефон к Wi‑Fi «iPhone (Валерия)».</li><li>Разрешите уведомления и Bluetooth.</li><li>На вкладке «Житель» нажмите «Включить охрану».</li><li>Адрес прибора и PIN‑коды — в «Настройках».</li></ul><p style="margin-top:6px">Открыть эту подсказку снова можно кнопкой «?» вверху.</p>']
+];
+var slideN=-1;
+function introHtml(){
+  if(slideN<0)return '';var sl=SLIDES[slideN],last=slideN==SLIDES.length-1;
+  return '<div class="intro"><div style="display:flex;justify-content:flex-end"><button class="gear" data-a="introskip">Пропустить</button></div><div class="slide"><div class="ico">'+sl[0]+'</div><h1>'+sl[1]+'</h1>'+sl[2]+'</div>'+
+    '<div class="dots">'+SLIDES.map(function(x,i){return '<i class="'+(i==slideN?'on':'')+'"></i>'}).join('')+'</div>'+
+    '<div class="row">'+(slideN>0?'<button class="btn gh" data-a="introprev">Назад</button>':'')+'<button class="btn sig" data-a="'+(last?'introskip':'intronext')+'">'+(last?'Начать':'Далее')+'</button></div></div>';
+}
+function drawIntro(){$('intro').innerHTML=introHtml()}
 
 /* ===== Цикл ===== */
 function tick(){
@@ -253,4 +351,8 @@ function tick(){
   draw();ringLocal();
 }
 setInterval(tick,1500);tick();
+loadWeather();setInterval(loadWeather,60000);
+(function(){var steps=['Загрузка…','Подключаюсь к прибору…','Готово'],i=0;var t=setInterval(function(){i++;if(i<steps.length)$('spl').textContent=steps[i]},800);
+  setTimeout(function(){clearInterval(t);$('splash').classList.add('hide');setTimeout(function(){$('splash').style.display='none'},600);
+    if(ls('intro')!='2'){slideN=0;drawIntro()}},2600)})();
 </script></body></html>

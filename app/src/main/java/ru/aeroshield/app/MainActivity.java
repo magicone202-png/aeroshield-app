@@ -20,6 +20,14 @@ import android.webkit.WebView;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +36,10 @@ import java.util.List;
  * JavaScript вызывает Java через объект Android (сеть, Bluetooth, фоновая охрана).
  */
 public class MainActivity extends Activity {
+    // Откуда приложение берёт обновления экранов (публичный репозиторий на GitHub)
+    static final String RAW = "https://raw.githubusercontent.com/magicone202-png/aeroshield-app/main/";
     private WebView web;
+    private int uiLoaded = 0;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override protected void onCreate(Bundle b) {
@@ -49,8 +60,74 @@ public class MainActivity extends Activity {
         web.setWebChromeClient(new WebChromeClient());
         web.addJavascriptInterface(new Bridge(), "Android");
         setContentView(web);
-        web.loadUrl("file:///android_asset/index.html");
+        loadUi();
         askPermissions();
+        checkUpdates();
+    }
+
+    // ---------- Экраны и их обновление без переустановки ----------
+    private File cacheFile() { return new File(new File(getFilesDir(), "ui"), "index.html"); }
+
+    static int uiVersion(String html) {
+        Matcher m = Pattern.compile("name=\"ui-version\" content=\"(\\d+)\"").matcher(html);
+        return m.find() ? Integer.parseInt(m.group(1)) : 0;
+    }
+
+    private String readAsset() {
+        try (InputStream is = getAssets().open("index.html")) {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] b = new byte[4096]; int n;
+            while ((n = is.read(b)) > 0) bo.write(b, 0, n);
+            return bo.toString("UTF-8");
+        } catch (Exception e) { return ""; }
+    }
+
+    private String readFile(File f) {
+        try (InputStream is = new java.io.FileInputStream(f)) {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] b = new byte[4096]; int n;
+            while ((n = is.read(b)) > 0) bo.write(b, 0, n);
+            return bo.toString("UTF-8");
+        } catch (Exception e) { return ""; }
+    }
+
+    /** Берём скачанную версию экранов, если она новее встроенной в APK. */
+    private void loadUi() {
+        int assetVer = uiVersion(readAsset());
+        File f = cacheFile();
+        int cacheVer = f.exists() ? uiVersion(readFile(f)) : 0;
+        if (cacheVer > assetVer) { uiLoaded = cacheVer; web.loadUrl("file://" + f.getAbsolutePath()); }
+        else { uiLoaded = assetVer; web.loadUrl("file:///android_asset/index.html"); }
+    }
+
+    private int appVersion() {
+        try {
+            android.content.pm.PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return Build.VERSION.SDK_INT >= 28 ? (int) pi.getLongVersionCode() : pi.versionCode;
+        } catch (Exception e) { return 0; }
+    }
+
+    /** Раз при запуске: смотрим version.json на GitHub. Новые экраны скачиваем сами, о новом APK сообщаем. */
+    private void checkUpdates() {
+        new Thread(() -> {
+            try {
+                Net.Resp v = Net.request("GET", RAW + "version.json?t=" + System.currentTimeMillis(), null, 8000);
+                if (v.code != 200) return;
+                JSONObject j = new JSONObject(v.body);
+                int ui = j.optInt("ui"), apk = j.optInt("apk");
+                if (apk > appVersion()) js("window.onApkUpdate && onApkUpdate(" + JSONObject.quote(j.optString("apkUrl")) + ")");
+                if (ui > uiLoaded) {
+                    Net.Resp h = Net.request("GET", RAW + "app/src/main/assets/index.html?t=" + System.currentTimeMillis(), null, 15000);
+                    if (h.code == 200 && h.body.contains("AEROSHIELD_UI") && uiVersion(h.body) >= ui) {
+                        File f = cacheFile();
+                        f.getParentFile().mkdirs();
+                        File tmp = new File(f.getParentFile(), "index.tmp");
+                        try (FileOutputStream os = new FileOutputStream(tmp)) { os.write(h.body.getBytes(StandardCharsets.UTF_8)); }
+                        if (tmp.renameTo(f)) js("window.onUiUpdate && onUiUpdate(" + uiVersion(h.body) + ")");
+                    }
+                }
+            } catch (Exception ignored) {}
+        }).start();
     }
 
     private void askPermissions() {
@@ -89,6 +166,12 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public String state() { return Hub.toJson(); }
+
+        @JavascriptInterface public void reloadUi() { web.post(MainActivity.this::loadUi); }
+        @JavascriptInterface public int uiVersion() { return uiLoaded; }
+        @JavascriptInterface public void openUrl(String url) {
+            try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (Exception ignored) {}
+        }
 
         /** Включить фоновую охрану жителя: адрес прибора 1 и ключ жителя. */
         @JavascriptInterface public void startWatch(String base, String resKey) {
