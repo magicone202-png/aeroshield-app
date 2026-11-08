@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>АэроЩит-ГО</title>
+<style>
+:root{--bg:#11181A;--card:#182124;--line:#283438;--ink:#E7EEEC;--mut:#8D9C99;--sig:#FF7A33;--ok:#43C487;--warn:#F2B53B;--bad:#FF5468;--duty:#7CB8CB;--alarm:#8E0C20}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,Roboto,"Segoe UI",sans-serif}
+.num{font-family:ui-monospace,"Roboto Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 14px 0}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:32px;height:32px;flex:none}
+.brand b{font-size:16px;flex:1}
+.gear{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:6px 10px;font-size:13px}
+.tabs{display:flex;gap:4px;margin-top:10px}
+.tabs button{flex:1;border:0;background:none;color:var(--mut);font:600 14px inherit;font-family:inherit;padding:10px 4px;border-bottom:3px solid transparent}
+.tabs button[aria-current]{color:var(--ink);border-color:var(--sig)}
+.wrap{padding:14px;display:flex;flex-direction:column;gap:12px;max-width:1100px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+h2{font-size:15px;margin:0 0 10px}
+.lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);font-weight:700}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-weight:600;font-size:15px;font-family:inherit;color:#111;background:var(--ink);min-height:46px}
+.btn.sig{background:var(--sig);color:#1A0C04}.btn.bad{background:var(--bad);color:#fff}.btn.ok{background:var(--ok);color:#06210f}
+.btn.gh{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row .btn{flex:1}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px}.kv dt{color:var(--mut)}.kv dd{margin:0}
+.l0{color:var(--ok)}.l1{color:var(--warn)}.l2{color:var(--bad)}.mut{color:var(--mut)}
+.big{font-size:48px;font-weight:700;line-height:1}
+.note{font-size:13px;color:var(--mut);background:rgba(255,255,255,.04);border-radius:10px;padding:9px 11px;margin:10px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:12px;color:var(--mut)}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--mut)}.chip.on i{background:var(--ok)}.chip.off i{background:var(--bad)}
+.kinds{display:grid;gap:8px}
+.kind{text-align:left;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:12px;padding:11px 12px;font:600 15px inherit;font-family:inherit}
+.kind small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.alarm{background:var(--alarm);border-color:#B5122B;color:#fff}
+.alarm .lbl{color:#FFC9CF}
+.ackbox{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;margin:8px 0 12px}
+.ev div{display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}.ev div:first-child{border-top:0}
+.ev .t{color:var(--mut);flex:none;width:62px}
+.over{position:fixed;inset:0;z-index:50;background:var(--alarm);color:#fff;padding:28px 20px;display:flex;flex-direction:column;justify-content:center;gap:14px;overflow:auto}
+.over h1{font-size:34px;margin:0;line-height:1.1}
+.over ol{margin:0;padding-left:22px;font-size:16px;display:grid;gap:4px}
+.over .btn{width:100%}
+.phone{border:2px solid var(--line);border-radius:26px;padding:14px;position:relative;overflow:hidden;min-height:420px;background:var(--bg)}
+.phone .over{position:absolute;padding:20px 16px;justify-content:flex-start}
+.phone .over h1{font-size:26px}
+.demo{display:grid;gap:12px}
+@media(min-width:780px){.demo{grid-template-columns:1.2fr 1fr;align-items:start}}
+input{width:100%;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:11px 12px;font-size:16px;margin-top:6px;font-family:inherit}
+label{display:block;margin-top:10px;font-size:13px;color:var(--mut)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;max-width:90%;display:none;z-index:60}
+@keyframes pulse{50%{transform:scale(1.1)}}.pulse{animation:pulse 1s infinite;display:inline-block}
+</style></head>
+<body>
+<div class="top"><div class="brand">
+<svg viewBox="0 0 48 48"><path d="M24 3 42 10v13c0 11-7.6 19.4-18 22C13.6 42.4 6 34 6 23V10z" fill="#FF7A33"/><path d="M14 27c4-6 8-6 10-2s6 4 10-2" fill="none" stroke="#1A0C04" stroke-width="3" stroke-linecap="round"/><path d="M14 20c4-6 8-6 10-2s6 4 10-2" fill="none" stroke="#1A0C04" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg>
+<b>АэроЩит-ГО</b><button class="gear" data-a="cfg">Настройки</button></div>
+<div class="tabs" id="tabs"></div></div>
+<div class="wrap" id="app"></div>
+<div id="over"></div>
+<div class="toast" id="toast"></div>
+<script>
+/* ===== Настройки и сеть ===== */
+var NATIVE=!!window.Android;
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+var CFG={base:ls('base')!=null?ls('base'):'http://172.20.10.9',pinS:ls('pinS')||'1234',pinR:ls('pinR')||'7777'};
+var TAB=ls('tab')||'res', KS=ls('kS')||'', KR=ls('kR')||'';
+var CB={},cbn=0;
+window.__net=function(id,code,text){var f=CB[id];delete CB[id];if(f)f(code,text)};
+function req(method,path,data){
+  return new Promise(function(res){
+    var q=new URLSearchParams(data||{}).toString(),url=CFG.base+path+(method=='GET'&&q?'?'+q:'');
+    var done=function(c,t){var j=null;try{j=JSON.parse(t)}catch(e){}res({code:c,json:j})};
+    if(NATIVE){var id='r'+(++cbn);CB[id]=done;Android.http(id,method,url,method=='POST'?q:'')}
+    else fetch(url,method=='POST'?{method:'POST',body:new URLSearchParams(data||{})}:{}).then(function(r){return r.text().then(function(t){done(r.status,t)})}).catch(function(){done(0,'')});
+  });
+}
+function login(pin){return req('POST','/api/login',{pin:pin}).then(function(r){return r.code==200&&r.json?r.json.k:''})}
+function nat(){if(!NATIVE)return {};try{return JSON.parse(Android.state())}catch(e){return {}}}
+
+/* ===== Помощники ===== */
+var KINDS=[['Опасность БПЛА','Угроза атаки беспилотников, всем в укрытие'],['Аварийный выброс','Закрыть окна, оставаться дома'],['Учебная тревога','Проверка оповещения жителей']];
+var STEPS=[['Отойдите от окон','Пройдите в коридор, ванную или подвал','Не выходите до сигнала отбоя'],['Закройте окна и форточки','Выключите вытяжку','Ждите указаний диспетчера'],['Подтвердите получение кнопкой ниже','Действий в реальности не требуется']];
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function hm(t){if(!t)return'';return new Date(t*1000).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function hms(e){return e.t?new Date(e.t*1000).toLocaleTimeString('ru-RU'):'+'+e.up+' с'}
+function dur(s){return s<60?s+' с':Math.floor(s/60)+' мин'}
+function toast(t){var el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(function(){el.style.display='none'},2500)}
+var actx=null;
+function beep(n,f){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();actx.resume();var t=actx.currentTime;for(var i=0;i<(n||2);i++){var o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f||880;g.gain.value=.08;o.connect(g);g.connect(actx.destination);o.start(t+i*.35);o.stop(t+i*.35+.22)}}catch(e){}}
+function vib(ms){if(NATIVE)Android.vibrate(ms);else try{navigator.vibrate(ms)}catch(e){}}
+
+/* ===== Данные ===== */
+var S=null, R=null, N={}, prevS=null, alerts=[], pick=-1, busy=false, cfgOpen=false, lastRing=0;
+function pollStation(){
+  if(!KS){login(CFG.pinS).then(function(k){if(k){KS=k;ls('kS',k)}});return}
+  req('GET','/api/state',{k:KS}).then(function(r){
+    if(r.code==401){KS='';return}
+    if(r.code==200&&r.json){detect(r.json);S=r.json;S._ok=Date.now()}
+    else if(S)S._lost=true;
+  });
+}
+function pollRes(){
+  if(!KR){login(CFG.pinR).then(function(k){if(k){KR=k;ls('kR',k)}});return}
+  req('GET','/api/rstate',{k:KR}).then(function(r){
+    if(r.code==401){KR='';return}
+    if(r.code==200&&r.json){R=r.json;R._ok=Date.now()} else if(R)R._lost=true;
+  });
+}
+function detect(s){
+  var p=prevS;prevS=s;if(!p)return;
+  function a(x,l){alerts.unshift({t:Date.now(),x:x,l:l});if(alerts.length>6)alerts.pop();beep(l==2?4:2,l==2?988:784);vib(300)}
+  if(s.lvl==2&&p.lvl<2)a('Опасный уровень CO: '+s.co.toFixed(0)+' ppm',2);
+  if(s.lvl<2&&p.lvl==2)a('CO снизился до '+s.co.toFixed(0)+' ppm',0);
+  if(s.alarm.on&&s.alarm.ack==1&&p.alarm.ack!=1)a('Житель в укрытии',0);
+  if(s.alarm.on&&s.alarm.ack==2&&p.alarm.ack!=2)a('Житель прочитал тревогу',1);
+  if(s.alarm.on&&s.alarm.noAns&&!p.alarm.noAns)a('Житель не ответил 3 минуты',2);
+  if(p.resOn&&!s.resOn)a('Телефон жителя пропал из сети',1);
+}
+
+/* ===== Экран диспетчера ===== */
+function stationHtml(compact){
+  if(!S)return '<section class="card"><h2>Пульт станции</h2><div class="mut">Подключаюсь к прибору 1 по адресу <span class="num">'+esc(CFG.base||'(этот сайт)')+'</span>… Телефон должен быть в той же сети Wi‑Fi, что и прибор.</div></section>';
+  var s=S,a=s.alarm,h='';
+  var stale=Date.now()-s._ok>6000;
+  h+='<div class="row" style="gap:6px"><span class="chip '+(stale?'off':'on')+'"><i></i>Прибор 1 '+(stale?'не отвечает':'на связи')+'</span><span class="chip '+(s.resOn?'on':'off')+'"><i></i>Житель '+(s.resOn?'на связи':'не в сети')+'</span></div>';
+  if(alerts.length)h+='<section class="card" style="border-color:var(--sig)"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Уведомления</h2><button class="btn gh" style="min-height:34px;padding:6px 10px" data-a="dismiss">Скрыть</button></div><div class="ev" style="margin-top:8px">'+alerts.map(function(x){return '<div><span class="t num">'+new Date(x.t).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</span><span class="l'+x.l+'" style="font-weight:600">'+esc(x.x)+'</span></div>'}).join('')+'</div></section>';
+  if(a.on){
+    var ack=a.ack==1?['✅','Житель в укрытии',hm(a.ackAt)]:a.ack==2?['👁','Житель прочитал тревогу',hm(a.ackAt)]:['⏳',a.noAns?'Житель не отвечает — позвоните ему':'Ждём ответа жителя',dur(a.sec)];
+    h+='<section class="card alarm"><span class="lbl">Тревога действует'+(a.at?' с '+hm(a.at):'')+'</span><h2 style="font-size:22px;margin:4px 0 0">'+KINDS[a.kind][0]+'</h2><div class="ackbox"><span style="font-size:22px">'+ack[0]+'</span><div><b>'+ack[1]+'</b><div style="font-size:13px;opacity:.85">'+ack[2]+'</div></div></div><button class="btn" style="width:100%;background:#fff;color:#8E0C20" data-a="clear">Дать отбой тревоги</button></section>';
+  }else if(pick>=0){
+    h+='<section class="card"><h2>Отправить «'+KINDS[pick][0]+'» жителю?</h2><div class="row"><button class="btn bad" data-a="send">Да, отправить</button><button class="btn gh" data-a="cancel">Отмена</button></div></section>';
+  }else{
+    h+='<section class="card"><h2>Оповещение жителей</h2><div class="kinds">'+KINDS.map(function(k,i){return '<button class="kind" data-k="'+i+'">'+k[0]+'<small>'+k[1]+'</small></button>'}).join('')+'</div></section>';
+  }
+  var pct=Math.min(100,s.co/s.danger*100),col=['var(--ok)','var(--warn)','var(--bad)'][s.lvl];
+  h+='<section class="card"><span class="lbl">Угарный газ · прибор 1 (станция)</span><div style="display:flex;align-items:flex-end;gap:8px;margin-top:6px"><span class="big num l'+s.lvl+'">'+(s.warm?'—':s.co.toFixed(1).replace('.',','))+'</span><span class="mut" style="padding-bottom:5px">ppm</span><b class="l'+s.lvl+'" style="margin-left:auto;padding-bottom:5px">'+['Норма','Повышено','Опасно'][s.lvl]+'</b></div>'+
+     '<div style="height:6px;background:var(--line);border-radius:3px;margin:10px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:'+col+'"></i></div>'+
+     (s.sim?'<div class="row" style="margin-top:10px"><button class="btn gh" data-a="burst">Имитировать выброс</button></div>':'')+'</section>';
+  if(!compact)h+='<section class="card"><h2>Журнал</h2><div class="ev">'+(s.ev.length?s.ev.slice(0,12).map(function(e){return '<div><span class="t num">'+hms(e)+'</span><span>'+esc(e.x)+'</span></div>'}).join(''):'<div>Событий пока нет</div>')+'</div></section>';
+  return h;
+}
+
+/* ===== Экран жителя ===== */
+function alarmNow(){ // тревога глазами жителя: из фоновой службы или из своего опроса
+  if(NATIVE&&N.watching&&N.linkOk)return {on:N.alarmOn,kind:N.kind,seq:N.seq,at:N.at,ack:N.ack};
+  return R;
+}
+function overHtml(j){
+  var st=j.ack==1?'<div class="ackbox"><span style="font-size:22px">✅</span><b>Вы отметились: в укрытии</b></div>':j.ack==2?'<div class="ackbox"><span style="font-size:22px">👁</span><b>Прочитано. Пройдите в укрытие и нажмите «Я в укрытии»</b></div>':'';
+  return '<div class="over"><div style="font-size:56px;line-height:1"><span class="pulse">⚠️</span></div><div class="lbl">Сигнал от диспетчера ГРЭС'+(j.at?' · '+hm(j.at):'')+'</div><h1>'+KINDS[j.kind][0]+'</h1><div style="font-size:16px">'+KINDS[j.kind][1]+'</div><ol>'+STEPS[j.kind].map(function(x){return '<li>'+x+'</li>'}).join('')+'</ol>'+st+
+    (j.ack!=1?'<button class="btn" style="background:#fff;color:#8E0C20" data-r="1">Я в укрытии</button>':'')+(j.ack==0?'<button class="btn gh" style="color:#fff;border-color:rgba(255,255,255,.7)" data-r="2">Понятно</button>':'')+'<div class="num" style="opacity:.9">Экстренные службы: 112</div></div>';
+}
+function resHtml(inPhone){
+  var j=alarmNow(),h='';
+  var link=NATIVE&&N.watching?N.linkOk:(R&&Date.now()-R._ok<6000);
+  h+='<section class="card" style="text-align:center;padding:22px 14px"><div style="font-size:42px">'+(j&&j.on?'🔴':link?'🟢':'⚪')+'</div><h2 style="font-size:20px;margin:6px 0">'+(j&&j.on?KINDS[j.kind][0]:link?'Тревог нет':'Нет связи с пультом')+'</h2><div class="mut">'+(j&&j.on&&j.ack==1?'Вы отметились в укрытии. Ждите сигнала отбоя.':link?'Связь с пультом станции есть.':'Подключите телефон к Wi‑Fi станции (точка «iPhone (Валерия)»).')+'</div></section>';
+  if(!inPhone){
+    var w=N.watching;
+    h+='<section class="card"><h2>Фоновая охрана</h2><div class="mut" style="font-size:14px">'+(w?'Включена. Тревога зазвучит, даже если телефон заблокирован или приложение свёрнуто.':'Выключена. Сигнал прозвучит, только пока приложение открыто.')+'</div>'+
+       (NATIVE?'<div class="row" style="margin-top:12px">'+(w?'<button class="btn gh" data-a="unwatch">Выключить охрану</button>':'<button class="btn ok" data-a="watch">Включить охрану</button>')+'</div><div class="row" style="margin-top:8px"><button class="btn gh" data-a="battery">Не усыплять приложение</button></div>':'<p class="note">Фоновая охрана работает только в установленном приложении.</p>')+'</section>';
+    var b=N.ble||'off',bt={off:'Не подключён',scan:'Ищу прибор…',link:'Подключаюсь…',on:'Подключён',error:'Ошибка'}[b]||b;
+    var co=N.co>=0&&N.coAge>=0&&N.coAge<15?N.co:null;
+    h+='<section class="card"><h2>Мой прибор (Bluetooth)</h2><dl class="kv"><dt>Связь</dt><dd class="'+(b=='on'?'l0':b=='error'?'l2':'')+'">'+bt+(b=='on'&&N.bleName?' · '+esc(N.bleName):'')+'</dd><dt>Угарный газ</dt><dd class="num">'+(b!='on'?'—':N.warm?'прибор прогревается':co!=null?co.toFixed(1).replace('.',',')+' ppm':'ждём данные')+'</dd></dl>'+
+       (N.bleErr&&b=='error'?'<p class="note" style="color:var(--bad)">'+esc(N.bleErr)+'</p>':'')+
+       (NATIVE?'<div class="row" style="margin-top:12px">'+(b=='on'?'<button class="btn gh" data-a="bletest">Проверить сирену</button><button class="btn gh" data-a="bleoff">Отключить</button>':'<button class="btn sig" data-a="blescan"'+(b=='scan'||b=='link'?' disabled':'')+'>Найти прибор рядом</button>')+'</div>':'<p class="note">Bluetooth работает только в установленном приложении.</p>')+
+       '<p class="note">При тревоге телефон сам включит сирену на приборе. Нажали «Я в укрытии» — сирена выключится.</p></section>';
+  }
+  return h;
+}
+
+/* ===== Настройки ===== */
+function cfgHtml(){
+  return '<section class="card"><h2>Настройки</h2><form id="cf">'+
+   '<label>Адрес прибора 1 (пульт станции)<input name="base" value="'+esc(CFG.base)+'" autocapitalize="off" placeholder="http://172.20.10.9"></label>'+
+   '<label>PIN работника станции<input name="pinS" value="'+esc(CFG.pinS)+'" inputmode="numeric"></label>'+
+   '<label>PIN жителя<input name="pinR" value="'+esc(CFG.pinR)+'" inputmode="numeric"></label>'+
+   '<div class="row" style="margin-top:14px"><button class="btn sig">Сохранить</button><button class="btn gh" type="button" data-a="cfg">Закрыть</button></div></form>'+
+   '<p class="note">Адрес прибора 1 показан в мониторе порта Arduino и на его веб‑пульте. Если телефон раздаёт Wi‑Fi сам, адрес обычно начинается с 172.20.10.</p></section>';
+}
+
+/* ===== Отрисовка ===== */
+function draw(){
+  var tabs=[['res','Житель'],['station','Диспетчер'],['demo','Демо: обе роли']];
+  $('tabs').innerHTML=tabs.map(function(t){return '<button data-t="'+t[0]+'"'+(TAB==t[0]?' aria-current="page"':'')+'>'+t[1]+'</button>'}).join('');
+  if(document.activeElement&&document.activeElement.tagName=='INPUT')return;
+  var h;
+  if(cfgOpen)h=cfgHtml();
+  else if(TAB=='station')h=stationHtml(false);
+  else if(TAB=='res')h=resHtml(false);
+  else{
+    var j=alarmNow();
+    h='<div class="mut" style="font-size:13px">Слева — пульт работника станции, справа — телефон жителя. Объявите тревогу и ответьте за жителя.</div><div class="demo"><div style="display:flex;flex-direction:column;gap:12px"><div class="lbl">Пульт станции</div>'+stationHtml(true)+'</div>'+
+      '<div><div class="lbl" style="margin-bottom:8px">Телефон жителя</div><div class="phone">'+resHtml(true)+(j&&j.on&&j.ack!=1?overHtml(j):'')+'</div></div></div>';
+  }
+  $('app').innerHTML=h;
+  // красный экран на весь телефон — во вкладке «Житель»
+  var j2=alarmNow();
+  $('over').innerHTML=(!cfgOpen&&TAB=='res'&&j2&&j2.on&&j2.ack!=1)?overHtml(j2):'';
+}
+
+/* ===== Сигнал, когда фоновая охрана выключена ===== */
+function ringLocal(){
+  var j=alarmNow(); if(!j||!j.on||j.ack!=0)return;
+  if(NATIVE&&N.watching)return; // звонит фоновая служба
+  if(TAB=='station')return;
+  if(Date.now()-lastRing>2500){lastRing=Date.now();beep(3,988);vib(600)}
+}
+
+/* ===== Нажатия ===== */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-t],[data-k],[data-a],[data-r]');if(!b)return;
+  beep(0); // разрешаем звук после первого касания
+  var d=b.dataset;
+  if(d.t){TAB=d.t;ls('tab',TAB);cfgOpen=false;draw();return}
+  if(d.k!=null){pick=+d.k;draw();return}
+  if(d.r){
+    var st=+d.r;
+    if(NATIVE&&N.watching)Android.ack(st);
+    else req('POST','/api/ack',{k:KR,st:st,seq:(R||{}).seq||0});
+    if(R)R.ack=st; N.ack=st; toast('Ответ отправлен на пульт станции'); draw(); return;
+  }
+  var a=d.a;
+  if(a=='cfg'){cfgOpen=!cfgOpen;draw();return}
+  if(a=='cancel'){pick=-1;draw();return}
+  if(a=='dismiss'){alerts=[];draw();return}
+  if(a=='watch'){if(!KR){toast('Нет связи с прибором 1');return}Android.startWatch(CFG.base,KR);toast('Охрана включена');return}
+  if(a=='unwatch'){Android.stopWatch();return}
+  if(a=='battery'){Android.batterySettings();return}
+  if(a=='blescan'){Android.bleScan();return}
+  if(a=='bleoff'){Android.bleOff();return}
+  if(a=='bletest'){Android.bleSend('T');toast('Сирена прибора: 2 секунды');return}
+  if(busy)return;
+  var map={send:['/api/alarm',{kind:pick},'Тревога отправлена'],clear:['/api/clear',{},'Отбой отправлен'],burst:['/api/burst',{},'Имитация выброса']};
+  var m=map[a];if(!m)return;
+  m[1].k=KS;busy=true;
+  req('POST',m[0],m[1]).then(function(r){busy=false;pick=-1;toast(r.code==200?m[2]:'Нет связи с прибором 1');tick()});
+});
+document.addEventListener('submit',function(e){
+  e.preventDefault();var f=new FormData(e.target);
+  CFG.base=String(f.get('base')||'').trim().replace(/\/+$/,'');CFG.pinS=String(f.get('pinS')||'').trim();CFG.pinR=String(f.get('pinR')||'').trim();
+  ls('base',CFG.base);ls('pinS',CFG.pinS);ls('pinR',CFG.pinR);KS=KR='';ls('kS','');ls('kR','');S=R=null;prevS=null;cfgOpen=false;toast('Сохранено');draw();
+});
+window.onBack=function(){if(cfgOpen){cfgOpen=false;draw();return true}if(pick>=0){pick=-1;draw();return true}return false};
+
+/* ===== Цикл ===== */
+function tick(){
+  N=nat();
+  if(TAB=='station'||TAB=='demo')pollStation();
+  if(TAB=='res'||TAB=='demo'){if(!(NATIVE&&N.watching))pollRes();else if(!KR)pollRes()}
+  draw();ringLocal();
+}
+setInterval(tick,1500);tick();
+</script></body></html>
